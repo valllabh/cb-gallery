@@ -4,12 +4,9 @@ Plugin Name: CB Gallery
 Plugin URI: 
 Description: Gallery Plugin
 Version: 1.0
-Author: Vallabh Joshi
-Author URI: http://vallabhjoshi.com
-License: 
+License: GPL2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
 */
-
-define('CB_GALLERY_PATH', __DIR__);
 
 // Make sure options are deleted on plugin deactivation
 function cb_gallery_deactivation() {
@@ -51,10 +48,10 @@ if ( is_admin() ){
 	add_action('admin_init', 'register_cb_gallery_settings');
 }
 
+// Show notice if there is a dependency required
 function cb_gallery_dependency(){
     echo '<div class="error"><p>CB Gallery is depend on plugin <a target="_blank" href="http://www.advancedcustomfields.com/">Advanced Custom Fields 3.5+</a></p></div>';
 }
-
 
 /**
  * Register field groups
@@ -62,7 +59,6 @@ function cb_gallery_dependency(){
  * You may edit the array as you see fit. However, this may result in errors if the array is not compatible with ACF
  * This code must run every time the functions.php file is read
  */
-
 if(function_exists("register_field_group")) {
 
 	$options = get_option('cb_gallery', array('image' => 1, 'video' => 0));
@@ -71,26 +67,20 @@ if(function_exists("register_field_group")) {
 	
 	if((int)$options['image']) {
 		$fields[] = array (
-			'key' => 'images',
+			'key' => 'field_images',
 			'label' => 'Images',
 			'name' => 'images',
 			'type' => 'repeater',
-			'order_no' => 1,
+			'order_no' => 10,
 			'instructions' => '',
 			'required' => 0,
 			'conditional_logic' => array (
 				'status' => 0,
-				'rules' => array (
-					array (
-						'field' => 'null',
-						'operator' => '==',
-						'value' => '',
-					),
-				),
+				'rules' => $rules,
 				'allorany' => 'all',
 			),
 			'sub_fields' => array (
-				'field_17' => array (
+				'image' => array (
 					'label' => 'Image',
 					'name' => 'image',
 					'type' => 'image',
@@ -99,7 +89,7 @@ if(function_exists("register_field_group")) {
 					'save_format' => 'object',
 					'preview_size' => 'thumbnail',
 					'order_no' => 0,
-					'key' => 'field_17',
+					'key' => 'field_image',
 				),
 			),
 			'row_min' => 0,
@@ -111,7 +101,7 @@ if(function_exists("register_field_group")) {
 
 	if((int)$options['video']) {
 		$fields[] = array (
-			'key' => 'external_videos',
+			'key' => 'field_external_videos',
 			'label' => 'External Videos',
 			'name' => 'external_videos',
 			'type' => 'repeater',
@@ -139,7 +129,7 @@ if(function_exists("register_field_group")) {
 					'default_value' => '',
 					'formatting' => 'none',
 					'order_no' => 0,
-					'key' => 'video',
+					'key' => 'field_video',
 				),
 				'title' => array (
 					'label' => 'Title',
@@ -150,7 +140,7 @@ if(function_exists("register_field_group")) {
 					'default_value' => '',
 					'formatting' => 'html',
 					'order_no' => 1,
-					'key' => 'title',
+					'key' => 'field_title',
 				),
 			),
 			'row_min' => 0,
