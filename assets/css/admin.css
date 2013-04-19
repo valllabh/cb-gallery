@@ -1,0 +1,111 @@
+.cb-gallery-box {
+	position: relative;
+}
+.cb-gallery-box .button-row {
+	padding: 10px;
+}
+.cb-gallery-box .attachments {
+	overflow: hidden;
+	background: url(../images/box-bg.png);
+	-webkit-transition: all 200ms ease;
+	-moz-transition: all 200ms ease;
+	-ms-transition: all 200ms ease;
+	-o-transition: all 200ms ease;
+	transition: all 200ms ease;
+}
+.cb-gallery-box .attachments .attachment {
+	margin: 20px 20px 10px 20px;
+}
+.cb-gallery-box .attachments .attachment .attachment-preview {
+	width: 85px;
+	height: 105px;
+	cursor: move;
+	background: none;
+	box-shadow:none;
+}
+.cb-gallery-box .attachments .attachment .attachment-actions {
+	position: absolute;
+	z-index: 3;
+	width: 100%;
+	text-align: center;
+	bottom: 0;
+}
+.cb-gallery-box .attachments .attachment .attachment-actions a {
+	text-transform: uppercase;
+	font-size: 10px;
+	color: #fff;
+	cursor: pointer;
+	text-decoration: none;
+	padding: 2px;
+	display: inline-block;
+}
+.cb-gallery-box a.remove-link {
+	position: absolute;
+	top: -5px;
+	left: -5px;
+	background: url(../images/remove-btn.png) no-repeat;
+	width: 16px;
+	height: 16px;
+	z-index: 10;
+	cursor: pointer;
+}
+
+.cb-gallery-box .attachments .attachment .attachment-preview .thumbnail {
+	width: 83px;
+	height: 83px;
+	background: #444;
+	border-radius: 5px;
+	-webkit-box-shadow:  0px 2px 5px 0px rgba(0, 0, 0, 0.5);
+	box-shadow:  0px 2px 5px 0px rgba(0, 0, 0, 0.5);
+}
+.cb-gallery-box .attachments .attachment .attachment-preview.type-image .thumbnail {
+	background: #fff
+}
+.cb-gallery-box .attachments .attachment .attachment-preview .thumbnail img {
+	width: auto;
+	height: auto;
+}
+.cb-gallery-box .attachments .attachment .attachment-preview.type-image .thumbnail img {
+	width: 90px;
+	height: 90px;
+}
+.cb-gallery-box .attachments .attachment .attachment-preview .thumbnail:after {
+	box-shadow: none;
+}
+.cb-gallery-box .attachments .attachment.ui-sortable-placeholder {
+	visibility: visible !important;
+	border:4px dashed #555;
+	border-radius: 4px;
+	width: 77px !important;
+	height: 97px !important;
+}
+
+table.compat-attachment-fields {
+	width: 100%;
+	table-layout: fixed;
+	border-spacing: 0;
+	border: 0;
+}
+table.compat-attachment-fields th.label {
+	width: 15%;
+}
+table.compat-attachment-fields th.label label {
+	display: block;
+}
+
+table.compat-attachment-fields p.help {
+	margin: 2px 0;
+}
+
+table.compat-attachment-fields .error {
+	color: #f00;
+	padding: 0 0 10px 0;
+}
+label.post-type {
+	display: inline-block;
+	width: auto;
+	margin: 5px 20px 5px 0;
+}
+.post-type input {
+	width: auto;
+}
