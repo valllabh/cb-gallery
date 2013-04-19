@@ -75,7 +75,6 @@ class CB_Gallery {
 		return implode(', ', $options);
 	}
 
-
 	/**
 	 * Register various hooks
 	 * 
