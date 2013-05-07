@@ -186,7 +186,7 @@ class CB_Gallery {
 		}
 		if(isset($result[$needle]) && isset($result[$needle]['resluts']) && isset($result[$needle]['resluts'][0])){
 			$result[$needle]['next_key'] = 1;
-			return $result[$needle]['resluts'][0];
+			return intval($result[$needle]['resluts'][0]);
 		} else {
 			return false;
 		}
@@ -456,7 +456,7 @@ class CB_Gallery {
 
 		$attachments_raw = isset($data['a']) ? $data['a'] : array();
 		$attachment_terms_raw = isset($data['at']) ? $data['at'] : array();
-		$attachment_terms = get_terms('gallery_types');
+		$attachment_terms = get_terms('gallery_types', array('hide_empty' => false));
 		$attachments = get_posts(array(
 			'post_type' => 'attachment',
 			'posts_per_page' => -1,
@@ -464,7 +464,6 @@ class CB_Gallery {
 		));
 
 		remove_action('save_post', array(&$this, 'hookSavePost'));
-
 		foreach ($attachments as $attachment) {
 			$terms_raw = isset($attachment_terms_raw[$attachment->ID]) ? $attachment_terms_raw[$attachment->ID] : array();
 			$terms_raw = array_map('intval', $terms_raw);

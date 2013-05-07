@@ -1,7 +1,7 @@
 <script type="text/html" id="tmpl-gallery-attachment">
 	<li class="attachment" id="attachment-{{data.id}}">
 		<a class="remove-link" onclick="return cb_gallery.attachment.remove(this);" title="Remove"></a>
-		<div class="attachment-preview type-{{data.type}} subtype-{{data.subtype}} {{data.orientation}}">
+		<div class="attachment-preview type-{{data.attributes.type}} subtype-{{data.attributes.subtype}} {{data.attributes.orientation}}">
 			<div class="thumbnail">
 				<div class="centered">
 					<img src="{{data.thumb}}"/>

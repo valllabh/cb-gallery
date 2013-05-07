@@ -1,4 +1,5 @@
 <div class="cb-gallery-box">
+	<input type="hidden" name="<?php echo $token; ?>[metabox]" value="1" />
 	<ul class="attachments ui-sortable">
 		<?php
 			foreach ($attachments as $attachment) {

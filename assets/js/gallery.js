@@ -55,7 +55,7 @@ var cb_gallery;
             as[a.id] = a;
           });
           _.each(as, function(data){
-            if(!attachments.find('#attachment-'+data.id).length){
+        	  if(!attachments.find('#attachment-'+data.id).length){
               data.thumb = (data.attributes.sizes && data.attributes.sizes.thumbnail.url) || data.attributes.icon;
               attachments.append((wp.media.template('gallery-attachment'))(data));
               attachments.find('#attachment-'+data.id).hide().show('fast');
