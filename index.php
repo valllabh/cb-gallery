@@ -3,7 +3,7 @@
 Plugin Name: CB Gallery
 Plugin URI: 
 Description: Gallery Plugin
-Version: 2.1
+Version: 2.2
 License: GPL2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 */

@@ -201,17 +201,19 @@ class CB_Gallery {
 	public function orderAttachments($a, $order_var){
 		$attachments = $a;
 
-		usort($attachments, array(new CB_Callable(function($a, $b, $order_var){
-			$a->$order_var = get_post_meta($a->ID, $order_var, true);
-			$b->$order_var = get_post_meta($b->ID, $order_var, true);
-
-			if ($a->$order_var == $b->$order_var) {
-				return 0;
-			}
-			return ($a->$order_var < $b->$order_var) ? -1 : 1;
-		}, array($order_var)), 'call'));
+		usort($attachments, array(new CB_Callable(array(&$this, 'orderAttachmentsLogic'), array($order_var)), 'call'));
 
 		return $attachments;
+	}
+
+	public function orderAttachmentsLogic($a, $b, $order_var) {
+		$a->$order_var = get_post_meta($a->ID, $order_var, true);
+		$b->$order_var = get_post_meta($b->ID, $order_var, true);
+
+		if ($a->$order_var == $b->$order_var) {
+			return 0;
+		}
+		return ($a->$order_var < $b->$order_var) ? -1 : 1;
 	}
 
 	/**
