@@ -38,6 +38,7 @@
 	text-decoration: none;
 	padding: 2px;
 	display: inline-block;
+	outline: none;
 }
 .cb-gallery-box a.remove-link {
 	position: absolute;
@@ -48,6 +49,10 @@
 	height: 16px;
 	z-index: 10;
 	cursor: pointer;
+}
+.cb-gallery-box a.remove-link:active {
+	outline: none;
+	zoom:0.9;
 }
 
 .cb-gallery-box .attachments .attachment .attachment-preview .thumbnail {
@@ -78,6 +83,9 @@
 	border-radius: 4px;
 	width: 77px !important;
 	height: 97px !important;
+}
+.cb-gallery-box .attachments .attachment .thumbnail:active {
+	opacity: 0.5;
 }
 
 table.compat-attachment-fields {

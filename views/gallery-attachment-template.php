@@ -11,7 +11,6 @@
 				<a class="edit-link" target="_blank" href="{{data.attributes.editLink}}"><?php _e('Edit') ?></a>
 			</div>
 		</div>
-		<input type="hidden" name="{{data.token}}[a][]" value="{{data.id}}" />
-		<input type="hidden" name="{{data.token}}[at][{{data.id}}][]" value="{{data.term_id}}" />
+		<input type="hidden" name="{{data.token}}[a][{{data.term_id}}][]" value="{{data.id}}" />
 	</li>
 </script>

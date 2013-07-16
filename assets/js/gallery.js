@@ -36,7 +36,6 @@ var cb_gallery;
           multiple: true,
           uploader: true,
           library: {
-            uploadedTo: options.post_id,
             orderby: 'menuOrder',
             order:   'ASC'
           },
@@ -55,7 +54,8 @@ var cb_gallery;
             as[a.id] = a;
           });
           _.each(as, function(data){
-        	  if(!attachments.find('#attachment-'+data.id).length){
+            if(!attachments.find('#attachment-'+data.id).length){
+              $.extend(data, options);
               data.thumb = (data.attributes.sizes && data.attributes.sizes.thumbnail.url) || data.attributes.icon;
               attachments.append((wp.media.template('gallery-attachment'))(data));
               attachments.find('#attachment-'+data.id).hide().show('fast');

@@ -17,8 +17,7 @@
 						<a class="edit-link" target="_blank" href="<?php echo get_edit_post_link($attachment->ID); ?>"><?php _e('Edit') ?></a>
 					</div>
 				</div>
-				<input type="hidden" name="<?php echo $token; ?>[a][]" value="<?php echo $attachment->ID; ?>" />
-				<input type="hidden" name="<?php echo $token; ?>[at][<?php echo $attachment->ID; ?>][]" value="<?php echo $gallery_type->term_id; ?>" />
+				<input type="hidden" name="<?php echo $token; ?>[a][<?php echo $gallery_type->term_id; ?>][]" value="<?php echo $attachment->ID; ?>" />
 			</li>
 		<?php } ?>
 	</ul>
