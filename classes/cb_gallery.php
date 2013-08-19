@@ -1,7 +1,5 @@
 <?php
 
-require 'cb_callable.php';
-
 class CB_Gallery {
 	private $dir;
 	private $assets_dir;
@@ -19,11 +17,13 @@ class CB_Gallery {
 	public function __construct( $file ) {
 		$this->dir = dirname( $file );
 		$this->file = $file;
-		$this->version = '3.0';
+		$this->version = '4.0';
 		$this->assets_dir = trailingslashit( $this->dir ) . 'assets';
 		$this->views_dir = trailingslashit( $this->dir ) . 'views';
 		$this->assets_url = esc_url( trailingslashit( plugins_url( '/assets/', $file ) ) );
 		$this->token = 'cb_gallery';
+
+		$this->taxonomy_metadata = new Taxonomy_Metadata($this->file);
 
 		$this->addHooks();
 	}
@@ -40,6 +40,9 @@ class CB_Gallery {
 				'page'
 			),
 			'applicable_post_types' => array(
+
+			),
+			'applicable_taxonomies' => array(
 
 			)
 		);
@@ -73,6 +76,109 @@ class CB_Gallery {
 	 */
 	private function itemsOptionsToString($options){
 		return implode(', ', $options);
+	}
+
+	/**
+	 * Get Nth attachment to the post
+	 * 
+	 * @access public
+	 * @return $post
+	 */
+	public function getNthAttachment($gallery_type, $object_type = 'post', $index = 0, $object_id = NULL){
+		global $post;
+
+		$object_id = $object_id ? array( $object_id ) : NULL;
+
+		$prev_post = $post;
+
+		$attachment = $this->getAttachments(
+			$gallery_type,
+			$object_type,
+			array(
+				'posts_per_page' => 1,
+				'offset' => $index
+			),
+			$object_id
+		);
+		$return_post = NULL;
+		while ($attachment->have_posts()) {
+			$attachment->the_post();
+			$return_post = $post;
+		}
+
+		$post = $prev_post;
+		return $return_post;
+	}
+
+	/**
+	 * Get attachments to the post
+	 * 
+	 * @access public
+	 * @return WP_Query
+	 */
+	public function getAttachments($gallery_type, $object_type = 'post', $args = array(), $object_ids = array() ){
+		global $post;
+
+		$options = $this->getOptions();
+		$gallery_type = get_term_by('slug', $gallery_type, 'cb_gallery_types');
+
+		if( !is_array( $object_ids ) ){
+			$object_ids = array( $object_ids );
+		}
+
+		$quried_object = get_queried_object();
+		$attachments_raw = array();
+		$galleries_token = $this->token.'_galleries';
+
+		switch ( $object_type ) {
+			case 'post':
+				$object_ids = !empty( $object_ids ) ? $object_ids : ( isset( $post->ID ) ? array( $post->ID ) : array() );
+				foreach ($object_ids as $object_id) {
+					$attachments = get_post_meta( $object_id, $galleries_token, true );
+					$attachments = is_array( $attachments ) ? $attachments : array();
+					$attachments_raw = array_merge_recursive_numbered( $attachments_raw, $attachments );
+				}
+				break;
+			case 'tag':
+			case 'term':
+			case 'category':
+			case 'taxonomy':
+				$object_ids = !empty( $object_ids ) ? $object_ids : ( isset( $quried_object->term_id ) ? array( $quried_object->term_id ) : array() );
+				foreach ($object_ids as $object_id) {
+					$attachments = get_term_meta( $object_id, $galleries_token, true);
+					$attachments = is_array( $attachments ) ? $attachments : array();
+					$attachments_raw = array_merge_recursive_numbered( $attachments_raw, $attachments );
+				}
+				break;
+		}
+
+		$post__in = isset( $attachments_raw[ $gallery_type->term_id ] ) ? $attachments_raw[ $gallery_type->term_id ] : array(0);
+
+		$args = wp_parse_args($args, array(
+			'post_type' => 'attachment',
+			'posts_per_page' => -1,
+			'post_status' => array('publish', 'inherit'),
+			'orderby' => 'post__in',
+			'order' => 'ASC',
+			'post__in' => $post__in
+		));
+
+		$attachments = new WP_Query($args);
+		return $attachments;
+	}
+
+	/**
+	 * Meta Box: Gallery
+	 * 
+	 *
+	 * @access public
+	 * @return void
+	 */
+	public function metaBoxGallery($post, $args){
+		wp_enqueue_script($this->token.'-admin-gallery');
+
+		extract($args['args']);
+		include $this->views_dir.'/metabox.php';
 	}
 
 	/**
@@ -117,16 +223,123 @@ class CB_Gallery {
 			add_filter( 'attachment_fields_to_edit', array(&$this, 'filterAttachmentFieldsEdit'), 10, 2 );
 			add_filter( 'attachment_fields_to_save', array(&$this, 'filterAttachmentFieldsSave'), 10, 2 );
 
-			// Taxonomy Hooks
-			add_action( 'gallery_types_edit_form', array(&$this, 'hookGalleryTypeFieldsEdit'), 10, 2 );
-			add_action( 'gallery_types_add_form_fields', array(&$this, 'hookGalleryTypeFieldsAdd'), 10, 1 );
-			add_action( 'created_term', array(&$this, 'hookGalleryTypeFieldsSave'), 10, 3 );
-			add_action( 'edit_term', array(&$this, 'hookGalleryTypeFieldsSave'), 10, 3 );
+			/* Taxonomy Hooks */
+			// Gallery Type
+			add_action( 'cb_gallery_types_edit_form', array(&$this, 'hookGalleryTypeFieldsEdit'), 10, 2 );
+			add_action( 'cb_gallery_types_add_form_fields', array(&$this, 'hookGalleryTypeFieldsAdd'), 10, 1 );
+			add_action( 'created_cb_gallery_types', array(&$this, 'hookGalleryTypeFieldsSave'), 10, 3 );
+			add_action( 'edited_cb_gallery_types', array(&$this, 'hookGalleryTypeFieldsSave'), 10, 3 );
+
+
+			// Other Taxonomy
+			$options = $this->getOptions();
+			$applicable_taxonomies = array();
+			foreach ($options['applicable_taxonomies'] as $taxonomies) {
+				foreach ($taxonomies as $taxonomy) {
+					$applicable_taxonomies[$taxonomy] = $taxonomy;
+				}
+			}
+
+			foreach ($applicable_taxonomies as $taxonomy) {
+				add_action( $taxonomy.'_edit_form', array(&$this, 'hookCategoryTagsGalleryEdit'), 10, 2 );
+				add_action( $taxonomy.'_add_form_fields', array(&$this, 'hookCategoryTagsGalleryAdd'), 10, 1 );
+				add_action( 'created_'.$taxonomy, array(&$this, 'hookCategoryTagsGallerySave'), 10, 2 );
+				add_action( 'edited_'.$taxonomy, array(&$this, 'hookCategoryTagsGallerySave'), 10, 2 );
+			}
 
 		}
 	}
 
 	/**
+	 * Hook: Hook: created_{taxonomy} + edited_{taxonomy}
+	 * 
+	 * @access public
+	 * @return void
+	 */
+	public function hookCategoryTagsGallerySave($term_id, $tt_id){
+
+		if( empty($term_id) ) return;
+
+		$options = $this->getOptions();
+
+		$data = isset($_POST[$this->token]) ? $_POST[$this->token] : array();
+		if(empty($data)) return;
+
+		$attachments = isset($data['a']) ? $data['a'] : array();
+
+		$term_galleries_token = $this->token.'_galleries';
+
+		update_term_meta( $term_id, $term_galleries_token, $attachments );
+	}
+
+	/**
+	 * Hook: Hook: {taxonomy}_add_form_fields
+	 * 
+	 * @access public
+	 * @return void
+	 */
+	public function hookCategoryTagsGalleryAdd($taxonomy){
+		wp_enqueue_script($this->token.'-admin-gallery');
+
+		$options = $this->getOptions();
+
+		foreach ($options['applicable_taxonomies'] as $gallery_type => $applicable_taxonomies) {
+			if( in_array( $taxonomy, $applicable_taxonomies ) ) {
+				$attachments = array();
+				$token = $this->token;
+				$gallery_type = get_term_by( 'id', $gallery_type, 'cb_gallery_types' );
+				if( isset( $gallery_type->term_id ) ){
+					require $this->views_dir.'/taxonomy-options-add.php';
+				}
+			}
+		}
+	}
+
+	/**
+	 * Hook: {taxonomy}_edit_form
+	 * 
+	 * @access public
+	 * @return void
+	 */
+	public function hookCategoryTagsGalleryEdit($term){
+		wp_enqueue_script($this->token.'-admin-gallery');
+
+		$options = $this->getOptions();
+		$taxonomy = $term->taxonomy;
+
+		$term_galleries_token = $this->token.'_galleries';
+
+		$attachments_raw = get_term_meta( $term->term_id, $term_galleries_token, true );
+
+		foreach ($options['applicable_taxonomies'] as $gallery_type => $applicable_taxonomies) {
+			if( in_array( $taxonomy, $applicable_taxonomies ) ) {
+				
+				$gallery_type = get_term_by( 'id', $gallery_type, 'cb_gallery_types' );
+				$attachments = array();
+
+				$post__in = isset( $attachments_raw[ $gallery_type->term_id ] ) ? $attachments_raw[ $gallery_type->term_id ] : array(0);
+
+				if( !empty($post__in) ){
+					$attachments = get_posts(array(
+						'post_type' => 'attachment',
+						'posts_per_page' => -1,
+						'orderby' => 'post__in',
+						'order' => 'ASC',
+						'post__in' => $post__in
+					));
+				}
+
+				$token = $this->token;
+				
+				if( isset( $gallery_type->term_id ) ){
+					require $this->views_dir.'/taxonomy-options-edit.php';
+				}
+			}
+		}
+	}
+
+	/**
+	 * Hook: cb_gallery_types_edit_form
 	 * Gallery Types Fields: Edit
 	 * 
 	 * @access public
@@ -135,12 +348,23 @@ class CB_Gallery {
 	public function hookGalleryTypeFieldsEdit($tag, $taxonomy){
 		$options = $this->getOptions();
 		$options['all_post_types'] = get_post_types(array(), 'objects');
+		$options['all_taxonomies'] = get_taxonomies(array('public' => true), 'objects');
 		extract($options);
+
+		foreach ( $all_taxonomies as &$all_taxonomy ) {
+			$all_taxonomy->post_types = array();
+			foreach ( $all_taxonomy->object_type as $key => $value ) {
+				if( isset( $all_post_types[ $value ] ) ){
+					$all_taxonomy->post_types[] = $all_post_types[ $value ]->label;
+				}
+			}
+		}
 
 		require $this->dir.'/views/gallery-types-options-edit.php';
 	}
 
 	/**
+	 * Hook: cb_gallery_types_add_form_fields
 	 * Gallery Types Fields: Add
 	 * 
 	 * @access public
@@ -149,12 +373,23 @@ class CB_Gallery {
 	public function hookGalleryTypeFieldsAdd($taxonomy){
 		$options = $this->getOptions();
 		$options['all_post_types'] = get_post_types(array(), 'objects');
+		$options['all_taxonomies'] = get_taxonomies(array('public' => true), 'objects');
 		extract($options);
+
+		foreach ( $all_taxonomies as &$all_taxonomy ) {
+			$all_taxonomy->post_types = array();
+			foreach ( $all_taxonomy->object_type as $key => $value ) {
+				if( isset( $all_post_types[ $value ] ) ){
+					$all_taxonomy->post_types[] = $all_post_types[ $value ]->label;
+				}
+			}
+		}
 
 		require $this->dir.'/views/gallery-types-options-add.php';
 	}
 
 	/**
+	 * Hook: created_term
 	 * Gallery Types Fields: Save
 	 * 
 	 * @access public
@@ -168,90 +403,13 @@ class CB_Gallery {
 		} elseif(isset($_POST['applicable_post_types_sent'])) {
 			$options['applicable_post_types'][$term_id] = array();
 		}
+		if(isset($_POST['applicable_taxonomies'])){
+			$applicable_taxonomies = array_map('esc_attr', $_POST['applicable_taxonomies']);
+			$options['applicable_taxonomies'][$term_id] = $applicable_taxonomies;
+		} elseif(isset($_POST['applicable_taxonomies'])) {
+			$options['applicable_taxonomies'][$term_id] = array();
+		}
 		$this->setOptions($options);
-	}
-
-	/**
-	 * Get Nth attachment to the post
-	 * 
-	 * @access public
-	 * @return $post
-	 */
-	public function getNthAttachment($gallery_type, $index = 0, $post_id = NULL){
-		global $post;
-
-		$post_id = $post_id ? $post_id : (isset($post->ID) ? $post->ID : NULL);
-
-		$prev_post = $post;
-
-		$attachment = $this->getAttachments(
-			$gallery_type,
-			array(
-				'posts_per_page' => 1,
-				'offset' => $index
-			),
-			$post_id
-		);
-		$return_post = NULL;
-		while ($attachment->have_posts()) {
-			$attachment->the_post();
-			$return_post = $post;
-		}
-
-		$post = $prev_post;
-		return $return_post;
-	}
-
-	/**
-	 * Get attachments to the post
-	 * 
-	 * @access public
-	 * @return WP_Query
-	 */
-	public function getAttachments($gallery_type, $args = array(), $post_id = NULL){
-		global $post;
-
-		$options = $this->getOptions();
-		$gallery_type = get_term_by('slug', $gallery_type, 'gallery_types');
-		$post_id = $post_id ? $post_id : (isset($post->ID) ? $post->ID : NULL);
-
-		if(!$post_id) return new WP_Query();
-
-		if( !( isset($options['applicable_post_types'][$gallery_type->term_id]) && in_array( $post->post_type, $options['applicable_post_types'][$gallery_type->term_id] ) ) ){
-			return new WP_Query();
-		}
-
-		$post_galleries_token = $this->token.'_galleries';
-
-		$attachments_raw = get_post_meta($post->ID, $post_galleries_token, true);
-
-		$post__in = isset( $attachments_raw[ $gallery_type->term_id ] ) ? $attachments_raw[ $gallery_type->term_id ] : array();
-
-		$args = wp_parse_args($args, array(
-			'post_type' => 'attachment',
-			'posts_per_page' => -1,
-			'post_status' => array('publish', 'inherit'),
-			'orderby' => 'post__in',
-			'order' => 'ASC',
-			'post__in' => $post__in
-		));
-
-		$attachments = new WP_Query($args);
-		return $attachments;
-	}
-
-	/**
-	 * Meta Box: Gallery
-	 * 
-	 *
-	 * @access public
-	 * @return void
-	 */
-	public function metaBoxGallery($post, $args){
-		wp_enqueue_script($this->token.'-admin-gallery');
-
-		extract($args['args']);
-		include $this->views_dir.'/metabox.php';
 	}
 
 	/**
@@ -261,20 +419,27 @@ class CB_Gallery {
 	 * @return WP_Query
 	 */
 	public function hookThePost($post){
+		global $_wp_additional_image_sizes;
+		$sizes = $_wp_additional_image_sizes;
+
+		$sizes['large'] = array();
+		$sizes['full'] = array();
+		$sizes['thumbnail'] = array();
 
 		if($post->post_type == 'attachment'){
 			$prefix = 'cb_gallery_meta_';
-			$post->cb_gallery = (object)array(
+			$post->cb_gallery = (object) array(
 				'link' => get_post_meta($post->ID, $prefix.'link'),
-				'embed_code' => get_post_meta($post->ID, $prefix.'embed_code'),
-				'raw_size' => array(
-					'thumb' => wp_get_attachment_image_src($post->ID, 'thumbnail'),
-					'large' => wp_get_attachment_image_src($post->ID, 'large'),
-					'full' => wp_get_attachment_image_src($post->ID, 'full'),
-				)
+				'embed_code' => get_post_meta($post->ID, $prefix.'embed_code')
 			);
-			foreach ($post->cb_gallery->raw_size as $key => $value) {
-				$post->cb_gallery->size->{$key} = $value[0];
+			foreach ($sizes as $raw_key => $value) {
+				$key = preg_replace('[-]', '_', $raw_key);
+				$img = wp_get_attachment_image_src($post->ID, $raw_key);
+				$post->cb_gallery->size->{$key} = (object) array(
+					'src' => $img[0],
+					'width' => $img[1],
+					'height' => $img[2]
+				);
 			}
 		}
 
@@ -298,7 +463,7 @@ class CB_Gallery {
 	 */
 	public function hookInit(){
 		register_taxonomy(
-			'gallery_types',
+			'cb_gallery_types',
 			'attachment',
 			array(
 				'labels' => array(
@@ -447,7 +612,7 @@ class CB_Gallery {
 		$options = $this->getOptions();
 		$attachments_raw = get_post_meta($post->ID, $post_galleries_token, true);
 
-		$gallery_types = get_terms('gallery_types', array(
+		$gallery_types = get_terms('cb_gallery_types', array(
 			'hide_empty' => false,
 		));
 
@@ -480,7 +645,7 @@ class CB_Gallery {
 				array(
 					'id' => $gallery_type->term_id,
 					'token' => $this->token,
-					'post_type' => $post->type,
+				//	'post_type' => $post->type, // 8/13/2013 2:55:48 PM @vallabh "no use"
 					'attachments' => $attachments,
 					'gallery_type' => $gallery_type
 				)
@@ -498,8 +663,8 @@ class CB_Gallery {
 	public function hookAdminPrintStyles(){
 		wp_register_style($this->token.'-admin', $this->assets_url.'css/admin.css', array(), $this->version);
 		wp_enqueue_style($this->token.'-admin');
-
-		wp_register_script($this->token.'-admin-gallery', $this->assets_url.'js/gallery.js');
+		wp_enqueue_media();
+		wp_register_script($this->token.'-admin-gallery', $this->assets_url.'js/gallery.js', array('jquery', 'jquery-ui-sortable') );
 	}
 
 	/**

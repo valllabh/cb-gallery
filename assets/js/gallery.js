@@ -56,7 +56,7 @@ var cb_gallery;
           _.each(as, function(data){
             if(!attachments.find('#attachment-'+data.id).length){
               $.extend(data, options);
-              data.thumb = (data.attributes.sizes && data.attributes.sizes.thumbnail.url) || data.attributes.icon;
+              data.thumb = (data.attributes.sizes && ( data.attributes.sizes.thumbnail && data.attributes.sizes.thumbnail.url ) || ( data.attributes.sizes.full && data.attributes.sizes.full.url ) ) || data.attributes.icon;
               attachments.append((wp.media.template('gallery-attachment'))(data));
               attachments.find('#attachment-'+data.id).hide().show('fast');
             }

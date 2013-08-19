@@ -88,6 +88,13 @@
 	opacity: 0.5;
 }
 
+.form-field.cb-gallery .cb-gallery-box, .form-table.cb-gallery .cb-gallery-box {
+	border: 1px solid #dfdfdf;
+	width: 95%;
+	border-radius: 3px;
+	overflow: hidden;
+}
+
 table.compat-attachment-fields {
 	width: 100%;
 	table-layout: fixed;
@@ -109,11 +116,11 @@ table.compat-attachment-fields .error {
 	color: #f00;
 	padding: 0 0 10px 0;
 }
-label.post-type {
+label.post-type, label.taxonomy-type {
 	display: inline-block;
 	width: auto;
 	margin: 5px 20px 5px 0;
 }
-.post-type input {
+.post-type input, .taxonomy-type input {
 	width: auto;
 }

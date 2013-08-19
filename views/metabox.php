@@ -22,7 +22,7 @@
 		<?php } ?>
 	</ul>
 	<div class="button-row">
-		<a class="button button-large button-primary add-media" onclick="return cb_gallery.modal.open(this, {token:'<?php echo $token; ?>', term_id:<?php echo $gallery_type->term_id; ?>, post_id:<?php echo $post->ID; ?>});" data-add-button="<?php echo __('Add'); ?>" data-title="<?php echo __('Select Media: '.$gallery_type->name); ?>"><?php echo __('Add Media'); ?></a>
+		<a class="button button-large button-primary add-media" onclick="return cb_gallery.modal.open(this, {token:'<?php echo $token; ?>', term_id:<?php echo $gallery_type->term_id; ?>});" data-add-button="<?php echo __('Add'); ?>" data-title="<?php echo __('Select Media: '.$gallery_type->name); ?>"><?php echo __('Add Media'); ?></a>
 	</div>
 </div>
 <style type="text/css">
