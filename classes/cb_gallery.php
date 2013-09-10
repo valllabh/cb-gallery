@@ -17,7 +17,7 @@ class CB_Gallery {
 	public function __construct( $file ) {
 		$this->dir = dirname( $file );
 		$this->file = $file;
-		$this->version = '4.0';
+		$this->version = '4.2';
 		$this->assets_dir = trailingslashit( $this->dir ) . 'assets';
 		$this->views_dir = trailingslashit( $this->dir ) . 'views';
 		$this->assets_url = esc_url( trailingslashit( plugins_url( '/assets/', $file ) ) );
@@ -78,6 +78,10 @@ class CB_Gallery {
 		return implode(', ', $options);
 	}
 
+	public function getGalleryMetaFieldKey(){
+		return $this->token.'_galleries';
+	}
+
 	/**
 	 * Get Nth attachment to the post
 	 * 
@@ -120,7 +124,9 @@ class CB_Gallery {
 		global $post;
 
 		$options = $this->getOptions();
-		$gallery_type = get_term_by('slug', $gallery_type, 'cb_gallery_types');
+		if( is_string( $gallery_type ) ) {
+			$gallery_type = get_term_by('slug', $gallery_type, 'cb_gallery_types');
+		}
 
 		if( !is_array( $object_ids ) ){
 			$object_ids = array( $object_ids );
@@ -128,14 +134,13 @@ class CB_Gallery {
 
 		$quried_object = get_queried_object();
 		$attachments_raw = array();
-		$galleries_token = $this->token.'_galleries';
 
 		switch ( $object_type ) {
 			case 'post':
 				$object_ids = !empty( $object_ids ) ? $object_ids : ( isset( $post->ID ) ? array( $post->ID ) : array() );
 				foreach ($object_ids as $object_id) {
-					$attachments = get_post_meta( $object_id, $galleries_token, true );
-					$attachments = is_array( $attachments ) ? $attachments : array();
+					$gallery_meta = get_post_meta( $object_id, $this->getGalleryMetaFieldKey(), true );
+					$attachments = ( is_array( $gallery_meta ) && isset( $gallery_meta['a'] ) ) ? $gallery_meta['a'] : array();
 					$attachments_raw = array_merge_recursive_numbered( $attachments_raw, $attachments );
 				}
 				break;
@@ -145,8 +150,8 @@ class CB_Gallery {
 			case 'taxonomy':
 				$object_ids = !empty( $object_ids ) ? $object_ids : ( isset( $quried_object->term_id ) ? array( $quried_object->term_id ) : array() );
 				foreach ($object_ids as $object_id) {
-					$attachments = get_term_meta( $object_id, $galleries_token, true);
-					$attachments = is_array( $attachments ) ? $attachments : array();
+					$gallery_meta = get_term_meta( $object_id, $this->getGalleryMetaFieldKey(), true);
+					$attachments = ( is_array( $gallery_meta ) && isset( $gallery_meta['a'] ) ) ? $gallery_meta['a'] : array();
 					$attachments_raw = array_merge_recursive_numbered( $attachments_raw, $attachments );
 				}
 				break;
@@ -179,6 +184,54 @@ class CB_Gallery {
 
 		extract($args['args']);
 		include $this->views_dir.'/metabox.php';
+	}
+
+	/**
+	 * Adds Gallery Meta Box
+	 * 
+	 *
+	 * @access public
+	 * @return void
+	 */
+	public	function addGalleryMetaBox( $gallery_type, $_post = NULL ){
+		global $post;
+
+
+		if( $_post ){
+			$_post = $post;
+		}
+
+		$gallery_meta = get_post_meta( $_post->ID, $this->getGalleryMetaFieldKey(), true );
+		$attachments_raw = ( is_array( $gallery_meta ) && isset( $gallery_meta['a'] ) ) ? $gallery_meta['a'] : array();
+
+		$post__in = isset( $attachments_raw[ $gallery_type->term_id ] ) ? $attachments_raw[ $gallery_type->term_id ] : array();
+
+		$attachments = array();
+		if( ! empty($post__in) ){
+			$attachments = get_posts(array(
+				'post_type' => 'attachment',
+				'posts_per_page' => -1,
+				'orderby' => 'post__in',
+				'order' => 'ASC',
+				'post__in' => $post__in
+			));
+		}
+
+		add_meta_box($this->token.'_'.$gallery_type->slug.'_'.$gallery_type->term_id,
+			$gallery_type->name,
+			array( &$this, 'metaBoxGallery' ),
+			$_post->type,
+			'normal',
+			'high',
+			array(
+				'id' => $gallery_type->term_id,
+				'token' => $this->token,
+				'gallery_meta' => $gallery_meta,
+				'attachments' => $attachments,
+				'gallery_type' => $gallery_type
+			)
+		);
+
 	}
 
 	/**
@@ -215,9 +268,7 @@ class CB_Gallery {
 			add_action( 'add_meta_boxes', array(&$this, 'hookMetaBoxes') );
 
 			// Post Save
-			add_action( 'save_post', array(&$this, 'hookSavePost'), 1, 2 );
-
-			
+			add_action( 'save_post', array(&$this, 'hookSavePost'), 1, 2 );			
 
 			// Attachment Fields
 			add_filter( 'attachment_fields_to_edit', array(&$this, 'filterAttachmentFieldsEdit'), 10, 2 );
@@ -265,11 +316,10 @@ class CB_Gallery {
 		$data = isset($_POST[$this->token]) ? $_POST[$this->token] : array();
 		if(empty($data)) return;
 
-		$attachments = isset($data['a']) ? $data['a'] : array();
+		$gallery_meta = get_term_meta( $object_id, $this->getGalleryMetaFieldKey(), true);
+		$gallery_meta['a'] = isset($data['a']) ? $data['a'] : array();
 
-		$term_galleries_token = $this->token.'_galleries';
-
-		update_term_meta( $term_id, $term_galleries_token, $attachments );
+		update_term_meta( $term_id, $this->getGalleryMetaFieldKey(), $gallery_meta );
 	}
 
 	/**
@@ -307,9 +357,8 @@ class CB_Gallery {
 		$options = $this->getOptions();
 		$taxonomy = $term->taxonomy;
 
-		$term_galleries_token = $this->token.'_galleries';
-
-		$attachments_raw = get_term_meta( $term->term_id, $term_galleries_token, true );
+		$gallery_meta = get_term_meta( $term->term_id, $this->getGalleryMetaFieldKey(), true );
+		$attachments_raw = ( is_array( $gallery_meta ) && isset( $gallery_meta['a'] ) ) ? $gallery_meta['a'] : array();
 
 		foreach ($options['applicable_taxonomies'] as $gallery_type => $applicable_taxonomies) {
 			if( in_array( $taxonomy, $applicable_taxonomies ) ) {
@@ -395,7 +444,7 @@ class CB_Gallery {
 	 * @access public
 	 * @return void
 	 */
-	public function hookGalleryTypeFieldsSave($term_id, $tt_id, $taxonomy){
+	public function hookGalleryTypeFieldsSave($term_id, $tt_id, $taxonomy = NULL){
 		$options = $this->getOptions();
 		if(isset($_POST['applicable_post_types'])){
 			$applicable_post_types = array_map('esc_attr', $_POST['applicable_post_types']);
@@ -418,7 +467,7 @@ class CB_Gallery {
 	 * @access public
 	 * @return WP_Query
 	 */
-	public function hookThePost($post){
+	public function hookThePost( $post ){
 		global $_wp_additional_image_sizes;
 		$sizes = $_wp_additional_image_sizes;
 
@@ -443,7 +492,7 @@ class CB_Gallery {
 			}
 		}
 
-		//return $post;
+		return $post;
 	}
 
 	/**
@@ -581,19 +630,19 @@ class CB_Gallery {
 		if(is_int(wp_is_post_autosave($post))) return;
 		if(!current_user_can('edit_post', $post_id)) return;
 
-		$options = $this->getOptions();
-		if(!in_array($post->post_type, $options['post_type'])) return;
+		//$options = $this->getOptions();
+		//if(!in_array($post->post_type, $options['post_type'])) return;
 
 		$data = isset($_POST[$this->token]) ? $_POST[$this->token] : array();
 		if(empty($data)) return;
 
-		$attachments = isset($data['a']) ? $data['a'] : array();
+		$gallery_meta = get_post_meta( $post_id, $this->getGalleryMetaFieldKey(), true );
 
-		remove_action('save_post', array(&$this, 'hookSavePost'));
+		$gallery_meta['a'] = isset( $data['a'] ) ? $data['a'] : array();
 
-		$post_galleries_token = $this->token.'_galleries';
+		remove_action( 'save_post', array(&$this, 'hookSavePost') );
 
-		update_post_meta( $post_id, $post_galleries_token, $attachments );
+		update_post_meta( $post_id, $this->getGalleryMetaFieldKey(), $gallery_meta );
 
 		add_action('save_post', array(&$this, 'hookSavePost'));
 	}
@@ -607,51 +656,19 @@ class CB_Gallery {
 	public function hookMetaBoxes() {
 		global $post;
 
-		$post_galleries_token = $this->token.'_galleries';
-
-		$options = $this->getOptions();
-		$attachments_raw = get_post_meta($post->ID, $post_galleries_token, true);
-
 		$gallery_types = get_terms('cb_gallery_types', array(
 			'hide_empty' => false,
 		));
 
+		$options = $this->getOptions();
 
 		foreach ($gallery_types as $gallery_type) {
-
 			if( !( isset($options['applicable_post_types'][$gallery_type->term_id]) && in_array( $post->post_type, $options['applicable_post_types'][$gallery_type->term_id] ) ) ){
 				continue;
 			}
-
-			$post__in = isset( $attachments_raw[ $gallery_type->term_id ] ) ? $attachments_raw[ $gallery_type->term_id ] : array();
-
-			$attachments = array();
-			if( ! empty($post__in) ){
-				$attachments = get_posts(array(
-					'post_type' => 'attachment',
-					'posts_per_page' => -1,
-					'orderby' => 'post__in',
-					'order' => 'ASC',
-					'post__in' => $post__in
-				));
-			}
-
-			add_meta_box($this->token.'_'.$gallery_type->slug,
-				$gallery_type->name,
-				array(&$this, 'metaBoxGallery'),
-				$post->type,
-				'normal',
-				'high',
-				array(
-					'id' => $gallery_type->term_id,
-					'token' => $this->token,
-				//	'post_type' => $post->type, // 8/13/2013 2:55:48 PM @vallabh "no use"
-					'attachments' => $attachments,
-					'gallery_type' => $gallery_type
-				)
-			);
-
+			$this->addGalleryMetaBox( $gallery_type, $post );
 		}
+
 	}
 
 	/**

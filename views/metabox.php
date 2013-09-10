@@ -1,4 +1,5 @@
 <div class="cb-gallery-box">
+	<?php do_action('cb_gallery_meta_box_before', $args); ?>
 	<input type="hidden" name="<?php echo $token; ?>[metabox]" value="1" />
 	<ul class="attachments ui-sortable">
 		<?php
@@ -21,6 +22,7 @@
 			</li>
 		<?php } ?>
 	</ul>
+	<?php do_action('cb_gallery_meta_box_after', $args); ?>
 	<div class="button-row">
 		<a class="button button-large button-primary add-media" onclick="return cb_gallery.modal.open(this, {token:'<?php echo $token; ?>', term_id:<?php echo $gallery_type->term_id; ?>});" data-add-button="<?php echo __('Add'); ?>" data-title="<?php echo __('Select Media: '.$gallery_type->name); ?>"><?php echo __('Add Media'); ?></a>
 	</div>
