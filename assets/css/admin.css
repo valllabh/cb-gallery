@@ -116,11 +116,11 @@ table.compat-attachment-fields .error {
 	color: #f00;
 	padding: 0 0 10px 0;
 }
-label.post-type, label.taxonomy-type {
+label.applicable-to {
 	display: inline-block;
 	width: auto;
 	margin: 5px 20px 5px 0;
 }
-.post-type input, .taxonomy-type input {
+.applicable-to input {
 	width: auto;
 }
