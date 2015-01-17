@@ -15,6 +15,7 @@
 }
 .cb-gallery-box .attachments .attachment {
 	margin: 20px 20px 10px 20px;
+	width: auto;
 }
 .cb-gallery-box .attachments .attachment .attachment-preview {
 	width: 85px;
@@ -81,7 +82,7 @@
 	visibility: visible !important;
 	border:4px dashed #555;
 	border-radius: 4px;
-	width: 77px !important;
+	width: 97px !important;
 	height: 97px !important;
 }
 .cb-gallery-box .attachments .attachment .thumbnail:active {
