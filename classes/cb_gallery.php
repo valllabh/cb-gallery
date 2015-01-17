@@ -9,7 +9,7 @@ class CB_Gallery {
 
 	/**
 	 * Constructor function.
-	 * 
+	 *
 	 * @access public
 	 * @since 2.0
 	 * @return void
@@ -30,12 +30,12 @@ class CB_Gallery {
 
 	/**
 	 * Default options
-	 * 
+	 *
 	 * @access private
 	 * @return array
 	 */
 	private function getDefaultOptions() {
-		return array( 
+		return array(
 			'applicable_post_types' => array(),
 			'applicable_taxonomies' => array(),
 			'applicable_user_roles' => array()
@@ -44,7 +44,7 @@ class CB_Gallery {
 
 	/**
 	 * Get Options
-	 * 
+	 *
 	 * @access private
 	 * @return array
 	 */
@@ -54,7 +54,7 @@ class CB_Gallery {
 
 	/**
 	 * Set Options
-	 * 
+	 *
 	 * @access private
 	 * @return array
 	 */
@@ -64,7 +64,7 @@ class CB_Gallery {
 
 	/**
 	 * Convert item options to string
-	 * 
+	 *
 	 * @access private
 	 * @return string
 	 */
@@ -78,7 +78,7 @@ class CB_Gallery {
 
 	/**
 	 * Get Nth attachment to the post
-	 * 
+	 *
 	 * @access public
 	 * @return $post
 	 */
@@ -89,10 +89,10 @@ class CB_Gallery {
 
 		$prev_post = $post;
 
-		$attachment = $this->getAttachments( 
+		$attachment = $this->getAttachments(
 			$gallery_type,
 			$object_type,
-			array( 
+			array(
 				'posts_per_page' => 1,
 				'offset' => $index
 			 ),
@@ -110,7 +110,7 @@ class CB_Gallery {
 
 	/**
 	 * Get attachments to the post
-	 * 
+	 *
 	 * @access public
 	 * @return WP_Query
 	 */
@@ -168,7 +168,7 @@ class CB_Gallery {
 
 		$post__in = isset( $attachments_raw[ $gallery_type->term_id ] ) ? $attachments_raw[ $gallery_type->term_id ] : array( 0 );
 
-		$args = wp_parse_args( $args, array( 
+		$args = wp_parse_args( $args, array(
 			'post_type' => 'attachment',
 			'posts_per_page' => -1,
 			'post_status' => array( 'publish', 'inherit' ),
@@ -183,7 +183,7 @@ class CB_Gallery {
 
 	/**
 	 * Meta Box: Gallery
-	 * 
+	 *
 	 *
 	 * @access public
 	 * @return void
@@ -197,7 +197,7 @@ class CB_Gallery {
 
 	/**
 	 * Adds Gallery Meta Box
-	 * 
+	 *
 	 *
 	 * @access public
 	 * @return void
@@ -217,7 +217,7 @@ class CB_Gallery {
 
 		$attachments = array();
 		if( ! empty( $post__in ) ) {
-			$attachments = get_posts( array( 
+			$attachments = get_posts( array(
 				'post_type' => 'attachment',
 				'posts_per_page' => -1,
 				'orderby' => 'post__in',
@@ -232,7 +232,7 @@ class CB_Gallery {
 			$_post->type,
 			'normal',
 			'high',
-			array( 
+			array(
 				'id' => $gallery_type->term_id,
 				'token' => $this->token,
 				'gallery_meta' => $gallery_meta,
@@ -245,7 +245,7 @@ class CB_Gallery {
 
 	/**
 	 * Register various hooks
-	 * 
+	 *
 	 * @access private
 	 * @return void
 	 */
@@ -290,7 +290,7 @@ class CB_Gallery {
 
 
 			/* Post Galleries */
-			add_action( 'save_post', array( &$this, 'hookSavePost' ), 1, 2 );		
+			add_action( 'save_post', array( &$this, 'hookSavePost' ), 1, 2 );
 			// Add Metaboxes to Post Types
 			add_action( 'add_meta_boxes', array( &$this, 'hookMetaBoxes' ) );
 
@@ -321,7 +321,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: personal_options_update|edit_user_profile_update
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -341,7 +341,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: personal_options
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -356,15 +356,15 @@ class CB_Gallery {
 		foreach ( $options['applicable_user_roles'] as $gallery_type => $roles ) {
 			if( count( array_intersect( $user->roles, $roles ) ) ) {
 				$gallery_type = get_term_by( 'id', $gallery_type, 'cb_gallery_types' );
-				
+
 				if( ! isset( $gallery_type->term_id ) ) { continue; }
-				
+
 				$attachments = array();
 
 				$post__in = isset( $attachments_raw[ $gallery_type->term_id ] ) ? $attachments_raw[ $gallery_type->term_id ] : array( 0 );
 
 				if( !empty( $post__in ) ) {
-					$attachments = get_posts( array( 
+					$attachments = get_posts( array(
 						'post_type' => 'attachment',
 						'posts_per_page' => -1,
 						'orderby' => 'post__in',
@@ -375,14 +375,14 @@ class CB_Gallery {
 
 				$token = $this->token;
 
-				$args = array( 
+				$args = array(
 					'id' => $gallery_type->term_id,
 					'gallery_type' => $gallery_type,
 					'token' => $this->token,
 					'attachments' => $attachments
 				 );
 				extract( $args );
-				
+
 				require $this->views_dir.'/taxonomy-options-edit.php';
 			}
 		}
@@ -390,7 +390,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: created_{taxonomy} + edited_{taxonomy}
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -411,7 +411,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: {taxonomy}_add_form_fields
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -423,7 +423,7 @@ class CB_Gallery {
 		foreach ( $options['applicable_taxonomies'] as $gallery_type => $applicable_taxonomies ) {
 			if( in_array( $taxonomy, $applicable_taxonomies ) ) {
 
-				$args = array( 
+				$args = array(
 					'id' => 'new',
 					'token' => $this->token,
 					'attachments' => array(),
@@ -441,7 +441,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: {taxonomy}_edit_form
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -456,7 +456,7 @@ class CB_Gallery {
 
 		foreach ( $options['applicable_taxonomies'] as $gallery_type => $applicable_taxonomies ) {
 			if( in_array( $taxonomy, $applicable_taxonomies ) ) {
-				
+
 				$gallery_type = get_term_by( 'id', $gallery_type, 'cb_gallery_types' );
 
 				if( ! isset( $gallery_type->term_id ) ) { continue; }
@@ -466,7 +466,7 @@ class CB_Gallery {
 				$post__in = isset( $attachments_raw[ $gallery_type->term_id ] ) ? $attachments_raw[ $gallery_type->term_id ] : array( 0 );
 
 				if( !empty( $post__in ) ) {
-					$attachments = get_posts( array( 
+					$attachments = get_posts( array(
 						'post_type' => 'attachment',
 						'posts_per_page' => -1,
 						'orderby' => 'post__in',
@@ -477,7 +477,7 @@ class CB_Gallery {
 
 				$token = $this->token;
 
-				$args = array( 
+				$args = array(
 					'id' => $gallery_type->term_id,
 					'gallery_type' => $gallery_type,
 					'token' => $this->token,
@@ -494,7 +494,7 @@ class CB_Gallery {
 	/**
 	 * Hook: cb_gallery_types_edit_form
 	 * Gallery Types Fields: Edit
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -523,7 +523,7 @@ class CB_Gallery {
 	/**
 	 * Hook: cb_gallery_types_add_form_fields
 	 * Gallery Types Fields: Add
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -552,14 +552,14 @@ class CB_Gallery {
 	/**
 	 * Hook: created_term
 	 * Gallery Types Fields: Save
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
 	public function hookGalleryTypeFieldsSave( $term_id, $tt_id, $taxonomy = NULL ) {
 		$options = $this->getOptions();
-		
-		$gallery_types = get_terms( 'cb_gallery_types', array( 
+
+		$gallery_types = get_terms( 'cb_gallery_types', array(
 			'hide_empty' => false,
 			'fields' => 'ids'
 		 ) );
@@ -601,7 +601,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: the_post
-	 * 
+	 *
 	 * @access public
 	 * @return WP_Query
 	 */
@@ -615,14 +615,15 @@ class CB_Gallery {
 
 		if( $post->post_type == 'attachment' ) {
 			$prefix = 'cb_gallery_meta_';
-			$post->cb_gallery = ( object ) array( 
+			$post->cb_gallery = ( object ) array(
 				'link' => get_post_meta( $post->ID, $prefix.'link' ),
 				'embed_code' => get_post_meta( $post->ID, $prefix.'embed_code' )
 			 );
+			$post->cb_gallery->size = new stdClass();
 			foreach ( $sizes as $raw_key => $value ) {
 				$key = preg_replace( '[-]', '_', $raw_key );
 				$img = wp_get_attachment_image_src( $post->ID, $raw_key );
-				$post->cb_gallery->size->{$key} = ( object ) array( 
+				$post->cb_gallery->size->{$key} = ( object ) array(
 					'src' => $img[0],
 					'width' => $img[1],
 					'height' => $img[2]
@@ -635,7 +636,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: switch_blog
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -649,11 +650,11 @@ class CB_Gallery {
 	 * @return void
 	 */
 	public function hookInit() {
-		register_taxonomy( 
+		register_taxonomy(
 			'cb_gallery_types',
 			'attachment',
-			array( 
-				'labels' => array( 
+			array(
+				'labels' => array(
 					'name'                => 'Gallery Types',
 					'singular_name'       => 'Gallery Type',
 					'search_items'        => 'Search gallery types',
@@ -686,7 +687,7 @@ class CB_Gallery {
 	public function filterAttachmentFieldsSave( $_post, $attachments ) {
 		$prefix = 'cb_gallery_meta_';
 
-		$fields = array( 
+		$fields = array(
 			$prefix.'link',
 			$prefix.'embed_code'
 		 );
@@ -722,7 +723,7 @@ class CB_Gallery {
 		$field_name = $prefix.'link';
 		$field_values[$field_name]['raw'] = get_post_meta( $post->ID, $field_name, true );
 		$field_values[$field_name]['escaped'] = esc_attr( $field_values[$field_name]['raw'] );
-		$form_fields[$field_name] = array( 
+		$form_fields[$field_name] = array(
 			'value' => $field_values[$field_name]['raw'],
 			'label' => __( 'Link' ),
 			'input' => 'html',
@@ -734,7 +735,7 @@ class CB_Gallery {
 		$field_name = $prefix.'embed_code';
 		$field_values[$field_name]['raw'] = get_post_meta( $post->ID, $field_name, true );
 		$field_values[$field_name]['escaped'] = ( $field_values[$field_name]['raw'] );
-		$form_fields[$field_name] = array( 
+		$form_fields[$field_name] = array(
 			'value' => $field_values[$field_name]['raw'],
 			'label' => __( 'Embed Code' ),
 			'input' => 'html',
@@ -794,7 +795,7 @@ class CB_Gallery {
 	public function hookMetaBoxes() {
 		global $post;
 
-		$gallery_types = get_terms( 'cb_gallery_types', array( 
+		$gallery_types = get_terms( 'cb_gallery_types', array(
 			'hide_empty' => false,
 		 ) );
 
@@ -811,7 +812,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: admin_print_styles
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -824,7 +825,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: admin_menu
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -833,7 +834,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: register_activation_hook
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -843,7 +844,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: register_deactivation_hook
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
@@ -853,7 +854,7 @@ class CB_Gallery {
 
 	/**
 	 * Hook: admin_notices
-	 * 
+	 *
 	 * @access public
 	 * @return void
 	 */
